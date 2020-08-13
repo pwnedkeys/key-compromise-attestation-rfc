@@ -98,13 +98,9 @@ the hashes used in signatures.
 
 ## CSR Subject
 
-The subject field of a key compromise attestation MUST be a distinguished
-name which contains only a CN field, with the value "Key Compromise Attestation"
-as a UTF8String.  When DER encoded, the subject field will therefore consist of the following
-octets:
-
-    30 25 31 23 30 21 06 03 55 04 03 0C 1A 4B 65 79 20 43 6F 6D 70 72
-    6F 6D 69 73 65 20 41 74 74 65 73 74 61 74 69 6F 6E
+The subject field of a key compromise attestation CSR MUST be a distinguished
+name which contains only a CN field, with the value "kca=v1 This Key Is Compromised" (without
+the quotes) as a UTF8String.
 
 Additional fields SHOULD NOT appear in the subject of the CSR, as they may be used to
 provide attacker-controlled prefix data.
@@ -112,16 +108,17 @@ provide attacker-controlled prefix data.
 
 ## CSR Subject Public Key
 
-The subjectPKInfo field of the key compromise attestation MUST be the SubjectPublicKeyInfo
-of the key which is attested as having been compromised.
+The subjectPKInfo field of the key compromise attestation CSR MUST be the
+SubjectPublicKeyInfo of the key which is attested as having been compromised.
 
 
 ## CSR Attributes
 
-A key compromise attestation MUST contain an Attributes section with a single attribute,
-an extensionRequest {{!RFC2985}}.  The extensionRequest, in turn, MUST contain a
-single extension, a NoSecurityAfforded {{!RFC7169}} extension, with a value of TRUE.  Per
-{{RFC7169}}, this extension MUST be marked critical.
+A key compromise attestation CSR MUST contain an Attributes section with a
+single attribute, an extensionRequest {{!RFC2985}}.  The extensionRequest, in
+turn, MUST contain a single extension, a NoSecurityAfforded {{!RFC7169}}
+extension, with a value of TRUE.  Per {{RFC7169}}, this extension MUST be
+marked critical.
 
 
 ## CSR Signature
@@ -174,6 +171,21 @@ mind that some key formats, in particular elliptic curve keys {{SEC1}}, have
 multiple valid representations.  The subjectPublicKeyInfo data in both the CSR
 and the key(s) in use MUST be normalised to a common format before comparison,
 to avoid false negatives.
+
+The subject of the CSR should be checked to ensure it indicates that the CSR
+is a Key Compromise Attestation, and not a regular CSR.  The prefix "kca=v1 "
+in the CN field indicates the version of the attestation, while the remainder
+of the field is a more human-readable indication that the key is compromised
+and should not be used.
+
+Ensuring the presence of the NoSecurityAfforded extension is of lesser
+importance, as its presence is primarily to prevent the accidental use of the
+compromise attestation CSR for other purposes.  Any system which validates
+attributes in a CSR before use should fail to process the extension (as it MUST
+be marked critical), while any system which blindly copies attributes from the
+CSR to the eventual certificate will produce a certificate which, once again,
+will fail to validate.  Systems which blindly copy attributes from a CSR to a
+certificate whilst resetting the critical flag are beyond help.
 
 Because key compromise attestations do not expire, and do not need to be
 "refreshed" on a regular basis, it is possible that over time attestations may
